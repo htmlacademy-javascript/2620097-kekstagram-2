@@ -4,8 +4,8 @@
  */
 
 import { generatePhotos } from './data.js';
+import { renderThumbnails } from './thumbnails.js';
 
-// Массив для отрисовки галереи (будет использоваться в следующих задачах)
-// eslint-disable-next-line no-unused-vars
 const photos = generatePhotos();
 
+renderThumbnails(photos);

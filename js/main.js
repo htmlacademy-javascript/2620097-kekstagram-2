@@ -4,8 +4,8 @@
  */
 
 import { generatePhotos } from './data.js';
-import { renderThumbnails } from './thumbnails.js';
+import { initGallery } from './gallery.js';
 
 const photos = generatePhotos();
 
-renderThumbnails(photos);
+initGallery(photos);

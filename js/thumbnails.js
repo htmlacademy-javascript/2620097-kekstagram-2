@@ -4,12 +4,13 @@ const picturesContainer = document.querySelector('.pictures');
 const renderThumbnails = (photos) => {
   const fragment = document.createDocumentFragment();
 
-  photos.forEach((photo) => {
+  photos.forEach((photo, index) => {
     const pictureElement = pictureTemplate.cloneNode(true);
     const imgElement = pictureElement.querySelector('.picture__img');
     const commentsElement = pictureElement.querySelector('.picture__comments');
     const likesElement = pictureElement.querySelector('.picture__likes');
 
+    pictureElement.dataset.index = String(index);
     imgElement.src = photo.url;
     imgElement.alt = photo.description;
     commentsElement.textContent = photo.comments.length;

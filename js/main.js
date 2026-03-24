@@ -5,7 +5,9 @@
 
 import { generatePhotos } from './data.js';
 import { initGallery } from './gallery.js';
+import { initFormUpload } from './form-upload.js';
 
 const photos = generatePhotos();
 
 initGallery(photos);
+initFormUpload();

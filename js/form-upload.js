@@ -11,6 +11,59 @@ const uploadFormElement = document.querySelector('.img-upload__form');
 const uploadCancelButtonElement = document.querySelector('.img-upload__cancel');
 const hashtagsInputElement = document.querySelector('.text__hashtags');
 const descriptionInputElement = document.querySelector('.text__description');
+const scaleSmallerButtonElement = document.querySelector('.scale__control--smaller');
+const scaleBiggerButtonElement = document.querySelector('.scale__control--bigger');
+const scaleControlValueElement = document.querySelector('.scale__control--value');
+const previewImgElement = document.querySelector('.img-upload__preview img');
+const effectLevelContainerElement = document.querySelector('.img-upload__effect-level');
+const effectSliderElement = document.querySelector('.effect-level__slider');
+const effectValueElement = document.querySelector('.effect-level__value');
+const effectRadioElements = document.querySelectorAll('.effects__radio');
+
+const SCALE_STEP = 25;
+const SCALE_MIN = 25;
+const SCALE_MAX = 100;
+const SCALE_DEFAULT = 100;
+
+const EFFECT_SETTINGS = {
+  chrome: {
+    min: 0,
+    max: 1,
+    step: 0.1,
+    resetValue: 1,
+    getFilterStyle: (value) => `grayscale(${value})`,
+  },
+  sepia: {
+    min: 0,
+    max: 1,
+    step: 0.1,
+    resetValue: 1,
+    getFilterStyle: (value) => `sepia(${value})`,
+  },
+  marvin: {
+    min: 0,
+    max: 100,
+    step: 1,
+    resetValue: 100,
+    getFilterStyle: (value) => `invert(${value}%)`,
+  },
+  phobos: {
+    min: 0,
+    max: 3,
+    step: 0.1,
+    resetValue: 3,
+    getFilterStyle: (value) => `blur(${value}px)`,
+  },
+  heat: {
+    min: 1,
+    max: 3,
+    step: 0.1,
+    resetValue: 3,
+    getFilterStyle: (value) => `brightness(${value})`,
+  },
+};
+
+let currentScale = SCALE_DEFAULT;
 
 const HASHTAG_MAX_COUNT = 5;
 const HASHTAG_MAX_LENGTH = 20;
@@ -92,11 +145,101 @@ pristine.addValidator(
   `Длина комментария не может быть больше ${COMMENT_MAX_LENGTH} символов`
 );
 
+const updateScale = (nextScale) => {
+  currentScale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, nextScale));
+  scaleControlValueElement.value = `${currentScale}%`;
+  previewImgElement.style.transform = `scale(${currentScale / 100})`;
+};
+
+const resetScale = () => {
+  currentScale = SCALE_DEFAULT;
+  updateScale(SCALE_DEFAULT);
+};
+
+const onScaleSmallerClick = () => {
+  updateScale(currentScale - SCALE_STEP);
+};
+
+const onScaleBiggerClick = () => {
+  updateScale(currentScale + SCALE_STEP);
+};
+
+const getSliderNumericValue = () => {
+  const raw = effectSliderElement.noUiSlider.get();
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return Number(value);
+};
+
+const syncEffectFromSlider = () => {
+  const checkedRadio = document.querySelector('.effects__radio:checked');
+  if (!checkedRadio || checkedRadio.value === 'none') {
+    return;
+  }
+  const effectType = checkedRadio.value;
+  const settings = EFFECT_SETTINGS[effectType];
+  if (!settings) {
+    return;
+  }
+  const value = getSliderNumericValue();
+  effectValueElement.value = String(value);
+  previewImgElement.style.filter = settings.getFilterStyle(value);
+};
+
+const onEffectSliderUpdate = () => {
+  syncEffectFromSlider();
+};
+
+const onEffectRadioChange = (evt) => {
+  const effectType = evt.target.value;
+  if (effectType === 'none') {
+    effectLevelContainerElement.classList.add('hidden');
+    previewImgElement.style.removeProperty('filter');
+    effectValueElement.value = '';
+    return;
+  }
+  const settings = EFFECT_SETTINGS[effectType];
+  effectLevelContainerElement.classList.remove('hidden');
+  effectSliderElement.noUiSlider.updateOptions(
+    {
+      range: { min: settings.min, max: settings.max },
+      step: settings.step,
+      start: [settings.resetValue],
+    },
+    true
+  );
+};
+
+const resetEffectUi = () => {
+  effectLevelContainerElement.classList.add('hidden');
+  previewImgElement.style.removeProperty('filter');
+  effectValueElement.value = '';
+  effectSliderElement.noUiSlider.updateOptions(
+    {
+      range: { min: EFFECT_SETTINGS.chrome.min, max: EFFECT_SETTINGS.chrome.max },
+      step: EFFECT_SETTINGS.chrome.step,
+      start: [EFFECT_SETTINGS.chrome.resetValue],
+    },
+    true
+  );
+};
+
+const initEffectSlider = () => {
+  noUiSlider.create(effectSliderElement, {
+    range: { min: EFFECT_SETTINGS.chrome.min, max: EFFECT_SETTINGS.chrome.max },
+    step: EFFECT_SETTINGS.chrome.step,
+    start: [EFFECT_SETTINGS.chrome.resetValue],
+    connect: 'lower',
+  });
+  effectSliderElement.noUiSlider.on('update', onEffectSliderUpdate);
+};
+
 const closeForm = () => {
   uploadOverlayElement.classList.add('hidden');
   bodyElement.classList.remove('modal-open');
   uploadFormElement.reset();
   pristine.reset();
+  resetScale();
+  resetEffectUi();
   uploadInputElement.value = '';
 };
 
@@ -128,6 +271,12 @@ const onUploadFormSubmit = (evt) => {
 };
 
 const initFormUpload = () => {
+  initEffectSlider();
+  scaleSmallerButtonElement.addEventListener('click', onScaleSmallerClick);
+  scaleBiggerButtonElement.addEventListener('click', onScaleBiggerClick);
+  effectRadioElements.forEach((radio) => {
+    radio.addEventListener('change', onEffectRadioChange);
+  });
   uploadInputElement.addEventListener('change', onUploadInputChange);
   uploadCancelButtonElement.addEventListener('click', onUploadCancelButtonClick);
   document.addEventListener('keydown', onDocumentKeydown);
